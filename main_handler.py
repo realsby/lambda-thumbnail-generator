@@ -6,6 +6,7 @@ import boto3
 
 
 desired_icc = "icc/sRGB_v4_ICC_preference.icc"  # Web supported icc file
+target_bucket_name = 'my_thumbnails_bucket'
 
 
 def lambda_handler(event, context, size=(256, 256)):
@@ -56,14 +57,10 @@ def lambda_handler(event, context, size=(256, 256)):
                     image = image.rotate(270, expand=True)
                 elif exif[tag] == 8:
                     image = image.rotate(90, expand=True)
-
-                image.save('/tmp/resized/{}.png'.format(local_key), "PNG", optimize=True,
+                
+                thumbnail_key = '{}_resized.png'.format(local_key)
+                image.save(thumbnail_key, "PNG", optimize=True,
                            dpi=[72, 72], compress_level=5, icc_profile=image.info.get('icc_profile'))
+                s3_client.upload_file(thumbnail_key, target_bucket_name, '{}_resized.png'.format(object_key))
         except IOError:
             pass  # PIL could not open file as image.
-
-        try:
-            # Create animated gif from video file.
-            raise ValueError('Its not public.')
-        except Exception:
-            pass
